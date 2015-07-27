@@ -28,6 +28,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+bool send_flag = false;
+
 typedef struct {
     
     char name[256];
@@ -81,10 +83,13 @@ int main(int argc, char *argv[])
     //FileInfo info;
     
     char *dir;
+    char *send_file_name;
     
     if (argc < 2) {
         dir = ".";
+    else if (strcmp(argv[1], "-d")) {
     
+    }
     else {
         dir = argv[1];
     }
