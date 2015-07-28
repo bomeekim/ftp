@@ -28,7 +28,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-bool send_flag = false;
+int send_flag = 0; //false
 
 typedef struct {
     
@@ -38,29 +38,6 @@ typedef struct {
     
 } FileInfo;
 
-/*
- * void ls(char *dir)
-{
-    printf("ls\n");
-    
-    DIR *dir_info;
-    struct dirent *dir_entry;
-    
-    dir_info = opendir((char*) dir);
-    
-    if (dir_info != NULL) {
-        while (1) {
-            dir_entry = readdir(dir_info);
-            
-            if (dir_entry == NULL)
-                break;
-                
-            printf("%s\n", dir_entry->d_name);
-        }
-        closedir(dir_info);
-    }
-}
-*/
 
 void ls_and_sort(char *dir)
 {
@@ -83,12 +60,9 @@ int main(int argc, char *argv[])
     //FileInfo info;
     
     char *dir;
-    char *send_file_name;
     
     if (argc < 2) {
         dir = ".";
-    else if (strcmp(argv[1], "-d")) {
-    
     }
     else {
         dir = argv[1];

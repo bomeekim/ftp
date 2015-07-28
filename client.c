@@ -21,12 +21,6 @@
  * 
  */
 
-/*
-daytime 클라이언트 프로그램이 실행되기 위해서는
-서버쪽에서 xinetd의 daytime이 구동하고 있어야한다.
-coder YoWu
-*/
- 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,17 +31,34 @@ coder YoWu
 
 #define BUF_LEN 256
 
+void parsing(char *recv_message, char *file_list)
+{
+    file_list = strtok(recv_message, "#");
+    
+    printf("[Client] 서버 파일 목록\n");
+    
+    while (file_list != NULL)
+    {
+        printf("%9s\n", file_list);
+        file_list = strtok(NULL, "#");
+    }
+    printf("\n");
+}
+
 
 int main(int argc, char **argv)
 {
     int sock;
-    int str_len;
-    int select_number;
-    char message[30];
+    char send_message[BUF_LEN];
+    char recv_message[BUF_LEN];
+    char file_list[BUF_LEN];
+    char dir[BUF_LEN];
+    char command[BUF_LEN];
     
     struct sockaddr_in serv_addr;
     
-    
+    memset(send_message, 0, sizeof(send_message));
+    memset(recv_message, 0, sizeof(recv_message));
     
     if(argc != 3)
     {
@@ -74,66 +85,42 @@ int main(int argc, char **argv)
         exit(0);
     }
     
-    //str_len = read(sock, message, sizeof(message)-1);
-    
-    /*if(str_len == -1)
-    {
-        printf("Client : Can't read the message\n");
-        exit(0);
-    }*/
     
     //start a ftp program
-    printf("Welcom to nemus ftp program\n");
+    printf("\n >>>>>>>>>>>>> Welcome to nemus ftp program <<<<<<<<<<<<<\n\n");
     
     while(1)
     {
-        printf("\n*-------------------------------------------*\n");
-        printf("          M      E      N      U            \n\n");
-        printf("                 1. File List\n");
-        printf("                 2. Upload\n");
-        printf("                 3. Download\n");
-        printf("                 4. Exit\n\n");
+        fputs("[Client] 전송할 메시지 입력 (ls, up, dw, quit) : ", stdout);
+        fgets(command, BUF_LEN, stdin);
         
-        printf("Select menu number : ");
-        scanf("%d\n", &select_number);
-        
-        printf("*-------------------------------------------*\n");
-        
-        switch(select_number){
-            case 1:
-                //파일 조회
-                break;
-                
-            case 2:
-                fputs("Upload file name with extension : ", stdout);
-                fgets(message, BUF_LEN, stdin);
-                //file_up_load_process(sock, message);
-                break;
-                
-            case 3:
-                fputs("Download file name with extension : ", stdout);
-                fflush(stdout);
-                fgets(message, BUF_LEN, stdin);
-                message[strlen(message)-1] = '\0';
-                write(sock, message, strlen(message)+1);
-                
-                
-                printf("Sent message from client to server : %s \n", message);
-                
-                //file_download_process(sock, message);
-                break;
-                
-            case 4:
-                printf("Close connection\n");
-                close(sock);
-                break;
-                
+        if(!strcmp(command, "quit\n")) 
+            break;
+        else if(!strcmp(command, "ls\n"))
+        {
+            command[strlen(command)-1] = '\0';
+            
+            fputs("[Client] 디렉토리 입력 : ", stdout);
+            fgets(dir, BUF_LEN, stdin);
+            
+            dir[strlen(dir)-1] = '\0';
+            
+            snprintf(send_message, sizeof(send_message), "%s%s", command, dir);
+            write(sock, send_message, strlen(send_message));
+            
+            read(sock, recv_message, sizeof(recv_message));
+    
+            printf("[Client] 서버로부터 받은 메시지 : %s \n", recv_message);
+            
+            parsing(recv_message, file_list);
+            
+            memset(recv_message, 0, sizeof(recv_message));
         }
-        
-        
+        else if(!strcmp(send_message, "up\n"))
+        {
+            fputs("파일이름 입력 : ", stdout);
+        }
     }
-    
-    
     close(sock);
     
     return 0;

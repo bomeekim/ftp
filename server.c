@@ -28,24 +28,56 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <dirent.h>
+#include <sys/stat.h>
 //소켓 프로그래밍에 사용될 헤더파일 선언
  
 #define BUF_LEN 256
 //메시지 송수신에 사용될 버퍼 크기를 선언
  
+ int serv_sock;
+ int clnt_sock;
  
- FILE* readFP;
- FILE* writeFP;
+ 
+ void ls_and_sort(char *dir, char *send_message, int size)
+{
+    struct dirent **dir_entry;
+    struct stat statbuf;
+    
+    int n, i;
+    
+    n = scandir(dir, &dir_entry, 0, alphasort);
+    
+    for (i = 0; i < n; i++) {
+        stat(dir_entry[i]->d_name, &statbuf);
+        
+        if((strlen(send_message)+strlen(dir_entry[i]->d_name)+2) <= BUF_LEN)
+        {
+            strncat(send_message, dir_entry[i]->d_name, strlen(dir_entry[i]->d_name));
+            strncat(send_message, "#", 1);
+        }
+        else
+        {
+            printf("send message buffer size error!\n");
+        }
+    }
+    
+    printf("send_message : %s\n", send_message);
+}
  
 int main(int argc, char *argv[])
 {
-    int serv_sock;
-    int clnt_sock;
-    int clnt_addr_size;
-    char message[BUF_LEN];
     
+    socklen_t clnt_addr_size;
+    
+    char send_message[BUF_LEN];
+    char recv_message[BUF_LEN];
+ 
     struct sockaddr_in serv_addr;
     struct sockaddr_in clnt_addr;
+    
+    memset(send_message, 0, sizeof(send_message));
+    memset(recv_message, 0, sizeof(recv_message));
     
     if(argc != 2)
     {
@@ -88,22 +120,27 @@ int main(int argc, char *argv[])
         exit(0);
     }
     
-    readFP = fdopen(clnt_sock, "r");
-    writeFP = fdopen(clnt_sock, "w");
-    
     printf("Connected from %s : %d\n", inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
     
-    while(!feof(readFP))
+    while((read(clnt_sock, recv_message, BUF_LEN)) != 0)
     {
-        fgets(message, BUF_LEN, readFP);
-        printf("Sent message from client : %s \n", message);
-        
-        fputs(message, writeFP);
-        printf("Send message to client : %s \n", message);
+        if(!strncmp(recv_message, "ls", 2))
+        {
+            char dir[BUF_LEN];
+            
+            strncpy(dir, recv_message+2, strlen(recv_message));
+            printf("[Server] 받은 메시지 : %s \n", dir);
+            
+            ls_and_sort(dir, send_message, sizeof(send_message));
+            write(clnt_sock, send_message, strlen(send_message));
+            
+            printf("[Server] 보낼 메시지 : %s \n", send_message);
+            
+            memset(send_message, 0, sizeof(send_message));
+        }
     }
-
-    fclose(writeFP);
-    fclose(readFP);
+    
+    close(clnt_sock);
     
     return 0;
 }
